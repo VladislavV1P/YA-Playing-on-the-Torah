@@ -85,3 +85,89 @@ obstaclePoints = generationPoints(
     point: obstaclePoints,
     row: sizeTorah[0],
     col: sizeTorah[1])
+
+
+
+var way  = [(point: startPoint, pathTraveled: " 1")]
+
+way[0].point[0] += 1
+var shortPath = "-1"
+var noWay = false
+var finishStep = false
+
+func stepVerification(step: (
+    point: [Int],
+    pathTraveled: String)) -> (
+        finish: Bool,
+        stepWay: Bool) {
+            
+            var totalFinish = false
+            var stepPath = true
+            
+            for finish in finishPoint {
+                if finish == step.point {
+                    shortPath = step.pathTraveled
+                    totalFinish = true
+                }
+            }
+            
+            for obstacle in obstaclePoints {
+                if obstacle == step.point {
+                    stepPath = false
+                } else {
+                    stepPath = true
+                }
+            }
+            return (finish: totalFinish,
+                    stepWay: stepPath)
+        }
+
+func findingPath(
+    way: [(
+        point: [Int],
+        pathTraveled: String)]) {
+            
+            var total = 0
+            var stepWay = [([Int], String)]()
+            let wayString = ["E","W","N","S"]
+            let wayInt = [1,-1,1,-1]
+            
+            for step in way {
+                var newStep = step
+                var checkStep = (
+                    finish: false,
+                    stepWay: true)
+                
+                
+                for index in wayString.indices {
+                    
+                    var str = newStep.pathTraveled.last ?? "W"
+                    if String(str) != wayString[index] {
+                        newStep.pathTraveled += wayString[index]
+                        if index < 2 {
+                            newStep.point[1] += wayInt[index]
+                        } else {
+                            newStep.point[0] += wayInt[index]
+                        }
+                    }
+                    checkStep = stepVerification(step: newStep)
+                    print(checkStep)
+                    if checkStep.finish {
+                        finishStep = true
+                    }
+                    if checkStep.stepWay {
+                        stepWay.append(newStep)
+                        newStep.pathTraveled.removeLast()
+                        newStep.point = step.point
+                        
+                    } else {
+                        total += 1
+                    }
+                }
+                if total == way.count  {
+                    noWay = true
+                }
+            }
+        }
+
+findingPath(way: [(point: [4,5], pathTraveled: " "), (point: [5,6], pathTraveled: " N")])
