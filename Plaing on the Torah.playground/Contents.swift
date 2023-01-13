@@ -3,18 +3,9 @@ import Foundation
 let input = readLine()
 
 var inputTest = """
-10 10
-1 0 8 8
-1 0 1 0 0 0 0 0 0 1
-0 0 0 0 1 0 0 1 0 0
-0 0 0 0 0 0 0 0 0 0
-0 0 0 1 0 0 1 1 0 0
-0 0 1 0 0 0 0 0 0 0
-1 0 0 0 0 0 0 0 0 1
-1 0 0 0 0 0 0 0 0 0
-0 1 1 1 1 1 1 1 1 0
-0 0 0 0 0 0 0 0 0 1
-1 1 1 1 1 1 1 1 1 1
+1 12
+0 0 0 6
+0 0 0 0 0 0 0 0 0 0 0 0
 """
 
 let inputString = input ?? inputTest
@@ -37,22 +28,24 @@ var finishPoint = Array<Int>()
 finishPoint.append(pointSF[2])
 finishPoint.append(pointSF[3])
 
-
 func generateObstaclePoints(
     points: [String],
-    sizeTorah: [Int] ) -> [Array<Int>] {
-        var totalObstaclePoints = [Array<Int>]()
-        var row = sizeTorah[0]
-        var col = sizeTorah[1]
-        for index in 2 ... row + 1 {
+    sizeTorah: [Int]) -> [Array<Int>: Int] {
+        var totalObstaclePoints = [Array<Int>: Int]()
+        var row = 0
+        var col = 0
+        for index in 2 ... sizeTorah[0] + 1 {
             let obstacle = dataInput[index].split(separator: " ").compactMap({ Int(String($0)) })
+            
             for item in obstacle {
                 if item > 0 {
-                    totalObstaclePoints.append([row,col])
+                    totalObstaclePoints[[row,col]] = 1
+                } else {
+                    totalObstaclePoints[[row,col]] = 0
                 }
                 col += 1
             }
-            col = sizeTorah[1]
+            col = 0
             row += 1
         }
         return totalObstaclePoints
@@ -61,37 +54,7 @@ func generateObstaclePoints(
 var obstaclePoints  = generateObstaclePoints(
     points: dataInput,
     sizeTorah: sizeTorah)
-
-func generationPoints(
-    point: [Array<Int>],
-    row: Int,
-    col: Int) -> [Array<Int>]
-{
-    var totalPoints = [Array<Int>]()
-    for item in point {
-        var newPoint = [item[0], item[1]]
-        totalPoints.append(newPoint)
-        newPoint = [item[0], item[1] - col]
-        totalPoints.append(newPoint)
-        newPoint = [item[0], item[1] + col]
-        totalPoints.append(newPoint)
-        newPoint = [item[0] - row, item[1]]
-        totalPoints.append(newPoint)
-        newPoint = [item[0] + row, item[1]]
-        totalPoints.append(newPoint)
-    }
-    return totalPoints
-}
-
-finishPoint = generationPoints(
-    point: finishPoint,
-    row: sizeTorah[0],
-    col: sizeTorah[1])
-
-obstaclePoints = generationPoints(
-    point: obstaclePoints,
-    row: sizeTorah[0],
-    col: sizeTorah[1])
+obstaclePoints[finishPoint] = 2
 
 var completedStep  = [(point: startPoint, pathTraveled: " ")]
 
@@ -110,29 +73,18 @@ func stepVerification(step: (
             var stepPath = true
             
             if !totalFinish {
-                for finish in finishPoint {
-//                    print("finish \(finish) == step.point \(step.point)")
-                    if finish == step.point {
-                        shortPath = step.pathTraveled
-                        totalFinish = true
-//                        print("shortPath \(shortPath)  # totalFinish \(totalFinish)")
-                        break
-                    }
-//                    print("shortPath \(shortPath)  # totalFinish \(totalFinish)")
-                }
-                
-                for obstacle in obstaclePoints {
-                    if totalFinish || !stepPath {
-                        print("---")
-                        break
-                    }
-//                    print("obstacle \(obstacle) == step.point \(step.point)")
-                    if obstacle == step.point {
-                        stepPath = false
-                    } else {
-                        stepPath = true
-                    }
-//                    print("stepPath \(stepPath)")
+                switch obstaclePoints[step.point] {
+                case 0:
+                    stepPath = true
+                case 1:
+                    stepPath = false
+                case 2:
+                    shortPath = step.pathTraveled
+                    totalFinish = true
+                case .none:
+                    print("none")
+                case .some(_):
+                    print("some")
                 }
             }
             return (finish: totalFinish,
@@ -142,70 +94,87 @@ func stepVerification(step: (
 func findingPath(
     way: [(
         point: [Int],
-        pathTraveled: String)]) {
-            
-            var total = 0
-            var stepWay = [(
-                point: [Int],
-                pathTraveled: String)]()
-            let wayString = ["E","W","N","S"]
-            let wayInt = [1,-1,1,-1]
-            
-            for step in way {
-//                var newStep = step
-                var checkStep = (
-                    finish: false,
-                    stepWay: true)
+        pathTraveled: String)]) -> Array<(
+            point: [Int],
+            pathTraveled: String)> {
                 
-//                print("findingPath 1 step \(step)")
+                var total = 0
+                var stepWay = [(
+                    point: [Int],
+                    pathTraveled: String)]()
+                var noDoublePoint = Set<[Int]>()
+                let wayString = ["S","N","E","W"]
+                let invertSade = ["N","S","W","E"]
+                let wayInt = [1,-1,1,-1]
                 
-                for index in wayString.indices {
-                    var newStep = step
-                    if checkStep.finish {
-                        break
-                    }
+                for step in way {
+                    var checkStep = (
+                        finish: false,
+                        stepWay: true)
                     
-                    var str = newStep.pathTraveled.last ?? "W"
-//                    print("wayString \(String(str)) != wayString[index] \(wayString[index])")
-                    if String(str) != wayString[index] {
-//                        print("newStep.pathTraveled = \(newStep.pathTraveled)")
-                        newStep.pathTraveled += wayString[index]
-//                        print(" + abc  newStep.pathTraveled = \(newStep.pathTraveled)")
-                        if index < 2 {
-                            newStep.point[1] += wayInt[index]
-                        } else {
-                            newStep.point[0] += wayInt[index]
+                    for index in wayString.indices {
+                        var newStep = step
+                        if checkStep.finish {
+                            total += 1
+                            break
                         }
-//                        print("newStep.point = \(newStep.point)")
+                        let lastChar = newStep.pathTraveled.last ?? "Q"
+                        if String(lastChar) == invertSade[index] {
+                            continue
+                        }
+                        
+                        newStep.pathTraveled += wayString[index]
+                        
+                        if index < 2 {
+                            switch newStep.point[0] + wayInt[index] {
+                            case sizeTorah[0]:
+                                newStep.point[0] = 0
+                            case -1:
+                                newStep.point[0] = sizeTorah[0] - 1
+                            case 0..<sizeTorah[0]:
+                                newStep.point[0] += wayInt[index]
+                            default:
+                                print("error")
+                            }
+                        } else {
+                            switch newStep.point[1] + wayInt[index] {
+                            case sizeTorah[1]:
+                                newStep.point[1] = 0
+                            case -1:
+                                newStep.point[1] = sizeTorah[1] - 1
+                            case 0..<sizeTorah[1]:
+                                newStep.point[1] += wayInt[index]
+                            default:
+                                print("error")
+                            }
+                        }
+                        
+                        checkStep = stepVerification(step: newStep)
+                        
+                        if checkStep.finish {
+                            finishStep = true
+                            break
+                        }
+                        if checkStep.stepWay && !noDoublePoint.contains(newStep.point) {
+                            stepWay.append(newStep)
+                            noDoublePoint.insert(newStep.point)
+                            total += 1
+                        }
                     }
-                    checkStep = stepVerification(step: newStep)
-//                    print(checkStep)
-                    if checkStep.finish {
-                        finishStep = true
-                    }
-                    if checkStep.stepWay {
-                        stepWay.append(newStep)
-                        obstaclePoints.append(newStep.point)
-                        total += 1
+                    if total == 0  {
+                        noWay = true
+                        shortPath = " -1"
+                    } else {
+                        total = 1
                     }
                 }
-                if total == 0  {
-                    noWay = true
-                    shortPath = " -1"
-                } else {
-                    total = 0
-                }
-            }
-            completedStep = stepWay
-            print("obstaclePoints = \(obstaclePoints)")
-            print("completedStep = \(completedStep)")
-        }
 
-//findingPath(way: completedStep)
+                return stepWay
+            }
 
 while !finishStep && !noWay {
-    print("+++")
-    findingPath(way: completedStep)
+    completedStep = findingPath(way: completedStep)
 }
 shortPath.removeFirst()
 print(shortPath)
+
