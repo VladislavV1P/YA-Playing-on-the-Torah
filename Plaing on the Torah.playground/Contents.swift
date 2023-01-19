@@ -42,13 +42,15 @@ func generateObstaclePoints() -> [Array<Int>: Int] {
 var obstaclePoints  = generateObstaclePoints()
 obstaclePoints[finishPoint] = 2
 
-var completedStep  = [(point: startPoint, pathTraveled: " ")]
+var completedStep  = [(point: startPoint, pathTraveled: " ", stepCost: 0)]
 var shortPath = "-1"
 
 var noWay = false
 var finishStep = false
 
-func stepVerification(step: (point: [Int], pathTraveled: String)) -> (finish: Bool, stepWay: Bool) {
+var checkStep = (finish: false, stepWay: true)
+
+func stepVerification(step: (point: [Int], pathTraveled: String, stepCost: Int)) {
     
     var totalFinish = false
     var stepPath = true
@@ -68,32 +70,30 @@ func stepVerification(step: (point: [Int], pathTraveled: String)) -> (finish: Bo
             print("some")
         }
     }
-    return (finish: totalFinish, stepWay: stepPath)
+    checkStep = (finish: totalFinish, stepWay: stepPath)
 }
 
-func findingPath(way: [(point: [Int], pathTraveled: String)]) -> Array<(point: [Int], pathTraveled: String)> {
+var noDoublePoint = Set<[Int]>()
+
+func findingPath(way: [(point: [Int], pathTraveled: String, stepCost: Int)]) {
     
     var total = 0
-    var stepWay = [(point: [Int], pathTraveled: String)]()
-    var noDoublePoint = Set<[Int]>()
+    var stepWay = [(point: [Int], pathTraveled: String, stepCost: Int)]()
     let wayString = ["S","N","E","W"]
     let invertSade = ["N","S","W","E"]
     let wayInt = [1,-1,1,-1]
+    checkStep = (finish: false, stepWay: true)
     
     for step in way {
-        var checkStep = (finish: false, stepWay: true)
+        checkStep.stepWay = true
+        
         
         for index in wayString.indices {
             var newStep = step
-            if checkStep.finish {
-                total += 1
-                break
-            }
             let lastChar = newStep.pathTraveled.last ?? "Q"
             if String(lastChar) == invertSade[index] {
                 continue
             }
-            
             newStep.pathTraveled += wayString[index]
             
             if index < 2 {
@@ -120,8 +120,7 @@ func findingPath(way: [(point: [Int], pathTraveled: String)]) -> Array<(point: [
                 }
             }
             
-            checkStep = stepVerification(step: newStep)
-            
+            stepVerification(step: newStep)
             if checkStep.finish {
                 finishStep = true
                 break
@@ -132,19 +131,33 @@ func findingPath(way: [(point: [Int], pathTraveled: String)]) -> Array<(point: [
                 total += 1
             }
         }
+        
+        if checkStep.finish {
+            finishStep = true
+            break
+        }
+        
         if total == 0  {
             noWay = true
             shortPath = " -1"
         } else {
-            total = 1
+            total += 1
         }
     }
     
-    return stepWay
+    completedStep = stepWay
 }
 
+
+
 while !finishStep && !noWay {
-    completedStep = findingPath(way: completedStep)
+    findingPath(way: completedStep)
+    noDoublePoint.removeAll()
+    if sizeTorah[0] > 0 && sizeTorah[1] > 0 {
+        for point in completedStep {
+            noDoublePoint.insert(point.point)
+        }
+    }
 }
 shortPath.removeFirst()
 print(shortPath)
